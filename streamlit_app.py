@@ -7,6 +7,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from threading import Thread
 from functools import partial
+import ssl
 
 class CORSRequestHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -22,6 +23,7 @@ ALLOWED_EXTENSIONS = {'glb', 'gltf'}
 STATIC_PORT = 8000
 STATIC_ROOT = 'static'
 SERVER_URL = f"http://localhost:{STATIC_PORT}/uploads"
+# if https replace with https://localhost:{STATIC_PORT}/uploads
 
 # Make sure the upload folder exists
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -32,6 +34,18 @@ def allowed_file(filename):
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
+
+
+def serve_https():
+    handler = partial(CORSRequestHandler, directory=STATIC_ROOT)
+    httpd = ThreadedHTTPServer(('localhost', STATIC_PORT), handler)
+    httpd.socket = ssl.wrap_socket(httpd.socket,
+        keyfile="path/to/key.pem",
+        certfile="path/to/cert.pem",
+        server_side=True
+    )
+    print(f"🔐 Serving static files at https://localhost:{STATIC_PORT}")
+    httpd.serve_forever()
 
 def start_static_server():
     if not is_port_in_use(STATIC_PORT):
@@ -46,6 +60,7 @@ def start_static_server():
 
 # 🔥 Start the static server
 start_static_server()
+#serve_https() # for https must have keyfile and certfile
 
 # 🎈 UI
 st.title("3D Model Uploader + Viewer")
