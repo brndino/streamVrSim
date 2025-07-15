@@ -1,5 +1,5 @@
 # .streamlit/config.toml
 
 [server]
-sslCertFile = 'path'
-sslKeyFile = 'path'
+sslCertFile = 
+sslKeyFile = 
