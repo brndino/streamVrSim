@@ -63,6 +63,8 @@ start_static_server()
 #serve_https() # for https must have keyfile and certfile
 
 # 🎈 UI
+st.set_page_config(page_title="3D Model Uploader + Viewer", page_icon="📦", layout="wide")
+st.sidebar.success('Select any page from here')
 st.title("3D Model Uploader + Viewer")
 st.write("Upload a `.glb` or `.gltf` file and preview it below using A-Frame.")
 
