@@ -8,6 +8,8 @@ from socketserver import ThreadingMixIn
 from threading import Thread
 from functools import partial
 import ssl
+import streamlit as st
+from streamlit_js_eval import streamlit_js_eval
 
 class CORSRequestHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -69,6 +71,7 @@ st.title("3D Model Uploader + Viewer")
 st.write("Upload a `.glb` or `.gltf` file and preview it below using A-Frame.")
 
 uploaded_file = st.file_uploader("Upload a 3D model", type=list(ALLOWED_EXTENSIONS))
+
 
 if uploaded_file and allowed_file(uploaded_file.name):
     file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.name)
@@ -263,7 +266,16 @@ AFRAME.registerComponent('click-details', {{
       infoBox.style.display = 'block';
       objectName.textContent = `Name: ${{clickedMesh.name}} | Type: ${{clickedMesh.type}}`;
     }}
-
+    console.log("Passing mesh to Streamlit:", clickedMesh.name,clickedMesh.userData);
+    window.parent.postMessage({{ isStreamlitMessage: true, type: "streamlit:setComponentValue", value: clickedMesh.name }}, "*");
+    const event = new CustomEvent("streamlit:sendMessage", {{
+        detail: {{
+    type: "mesh_selected",
+    data: clickedMesh.name
+  }}
+  );
+  window.dispatchEvent(event);
+    st.session_state.selected_mesh = clickedMesh.name; // Store in Streamlit session state
     lastClickedMesh = clickedMesh;
   }});
 </script>
@@ -271,3 +283,5 @@ AFRAME.registerComponent('click-details', {{
 
 elif uploaded_file:
     st.error("Invalid file type. Please upload a .glb or .gltf.")
+
+

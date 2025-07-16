@@ -1,7 +1,4 @@
 import streamlit as st
-
-st.sidebar.success('Currently on API Configuration page')
-
 import os
 import pandas as pd
 import json
@@ -22,7 +19,7 @@ else:
 
 # Page config
 st.set_page_config(page_title="API Configuration", page_icon="🖥️", initial_sidebar_state='collapsed')
-
+st.sidebar.success('Currently on API Configuration page')
 # Load existing API keys if available
 try:
     api_df = pd.read_csv('./temp/api_keys.csv')
@@ -70,12 +67,5 @@ else:
 
 # Navigation buttons
 st.markdown('#')
-c1, c2 = st.columns(2)
-
-with c1:
-    if st.button("⬅️ Home", type="secondary"):
-        st.switch_page("streamlit_app.py")
-
-with c2:
-    if st.button("Select file ➡️", type="primary", disabled=not api_valid):
-        st.switch_page("pages/apiConfig.py")
+if st.button("Home", type="secondary"):
+    st.switch_page("streamlit_app.py")
