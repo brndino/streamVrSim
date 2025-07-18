@@ -69,7 +69,24 @@ st.set_page_config(page_title="3D Model Uploader + Viewer", page_icon="📦", la
 st.sidebar.success('Select any page from here')
 st.title("3D Model Uploader + Viewer")
 st.write("Upload a `.glb` or `.gltf` file and preview it below using A-Frame.")
-
+selected = st.empty()
+mesh_name = streamlit_js_eval(
+    js_expressions=None,
+    key="mesh_selection",
+    events=["mesh_selected"]
+)
+st.write(f"Mesh Name: `{mesh_name}`")
+if mesh_name:
+    st.success(f"✅ Selected: {mesh_name}")
+if mesh_name:
+    print(f"✅ Selected Mesh: {mesh_name}")
+    st.session_state.selected_mesh = mesh_name
+    st.success(f"✅ Selected: {mesh_name}")
+    disabled = False
+    st.write(f"Selected Mesh: `{mesh_name}`")
+else:
+    disabled = True
+    
 uploaded_file = st.file_uploader("Upload a 3D model", type=list(ALLOWED_EXTENSIONS))
 
 
@@ -243,12 +260,13 @@ AFRAME.registerComponent('click-details', {{
     }});
   }});
 
-  let lastClickedMesh = null;
+   let lastClickedMesh = null;
+
   document.querySelector('a-scene').addEventListener('click', evt => {{
     const intersection = evt.detail.intersection;
     if (!intersection || !intersection.object) return;
-    const clickedMesh = intersection.object;
 
+    const clickedMesh = intersection.object;
     if (!clickedMesh.userData.clickable) return;
 
     // Reset previous highlight
@@ -266,22 +284,24 @@ AFRAME.registerComponent('click-details', {{
       infoBox.style.display = 'block';
       objectName.textContent = `Name: ${{clickedMesh.name}} | Type: ${{clickedMesh.type}}`;
     }}
-    console.log("Passing mesh to Streamlit:", clickedMesh.name,clickedMesh.userData);
-    window.parent.postMessage({{ isStreamlitMessage: true, type: "streamlit:setComponentValue", value: clickedMesh.name }}, "*");
+
+    console.log("✅ Passing mesh to Streamlit:", clickedMesh.name, clickedMesh.userData);
+    // Also trigger a CustomEvent if using streamlit_js_eval
     const event = new CustomEvent("streamlit:sendMessage", {{
-        detail: {{
-    type: "mesh_selected",
-    data: clickedMesh.name
-  }}
-  );
-  window.dispatchEvent(event);
-    st.session_state.selected_mesh = clickedMesh.name; // Store in Streamlit session state
+      detail: {{
+        type: "mesh_selected",
+        data: clickedMesh.name
+      }}
+    }});
+    window.dispatchEvent(event);
+
     lastClickedMesh = clickedMesh;
   }});
 </script>
 """, height=600)
-
+    
 elif uploaded_file:
     st.error("Invalid file type. Please upload a .glb or .gltf.")
 
-
+if st.button("Generate", disabled= disabled):
+    st.switch_page("pages/Generate.py")  # Or whatever route you're using
