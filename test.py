@@ -1,18 +1,16 @@
 import streamlit as st
 import streamlit.components.v1 as components
+from streamlit_js_eval import streamlit_js_eval
 
 st.title("3D Object Selector")
 
-params = st.query_params
-selected = params.get("selected", [""])[0]
+# Initialize session state
+if "selected" not in st.session_state:
+    st.session_state.selected = ""
+if "user_text" not in st.session_state:
+    st.session_state.user_text = ""
 
-if selected:
-    st.success(f"You selected: {selected}")
-    if st.button("Continue"):
-        st.write(f"Handling logic for: {selected}")
-else:
-    st.info("Click an object to select.")
-
+# A-Frame HTML with clickable objects
 components.html(
     """
     <!DOCTYPE html>
@@ -28,9 +26,21 @@ components.html(
           init: function () {
             this.el.addEventListener('click', () => {
               const meshId = this.el.id;
-              const baseUrl = window.location.href.split('?')[0];
-              const newUrl = `${baseUrl}?selected=${meshId}`;
-              window.location.href = newUrl;
+              
+              // Reset colors of all clickable objects
+              document.querySelectorAll('[clickable]').forEach(el => {
+                if (el.id === "box") el.setAttribute('color', '#4CC3D9');
+                if (el.id === "sphere") el.setAttribute('color', '#EF2D5E');
+              });
+
+              // Highlight clicked object
+              this.el.setAttribute('color', '#00FF00');
+
+              // Send clicked object to Streamlit
+              window.parent.postMessage(
+                { type: "AFRAME_CLICK", object: meshId },
+                "*"
+              );
             });
           }
         });
@@ -40,11 +50,41 @@ components.html(
       <a-scene embedded>
         <a-box id="box" clickable position="-1 1.5 -3" rotation="0 45 0" color="#4CC3D9"></a-box>
         <a-sphere id="sphere" clickable position="1 1.5 -3" radius="0.5" color="#EF2D5E"></a-sphere>
-        <a-camera position="0 1.6 0"></a-camera>
+        <a-camera position="0 1.6 0"><a-cursor></a-cursor></a-camera>
       </a-scene>
     </body>
     </html>
     """,
     height=500,
-    scrolling=False
+    scrolling=False,
 )
+
+# Listen for postMessage events from iframe (fully live)
+clicked = streamlit_js_eval(
+    js_expressions="""
+    new Promise((resolve) => {
+        window.onmessage = (event) => {
+            if (event.data && event.data.type === "AFRAME_CLICK") {
+                resolve(event.data.object);
+            }
+        };
+    })
+    """
+)
+
+# Update session state immediately
+if clicked:
+    st.session_state.selected = clicked
+    st.session_state.user_text = ""  # Reset text for new object
+
+# Show the text input
+if st.session_state.selected:
+    st.success(f"You clicked on: {st.session_state.selected}")
+    st.session_state.user_text = st.text_input(
+        f"Enter text for {st.session_state.selected}:",
+        value=st.session_state.user_text
+    )
+    if st.session_state.user_text:
+        st.write(f"You entered: {st.session_state.user_text}")
+else:
+    st.info("Click an object in the scene to select it.")
